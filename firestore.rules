@@ -1,0 +1,195 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (Auth UID)
+    // Fields:
+    //   - userId: string (required)
+    //   - email: string (required, format: email)
+    //   - name: string (required, size < 100)
+    //   - role: string (required, enum: ['student', 'instructor', 'admin'])
+    //   - phoneNumber: string (optional, size < 20)
+    //   - messengerLink: string (optional, size < 200)
+    //   - badgeInfo: string (optional, size < 1000)
+    //   - createdAt: string (required, ISO date)
+    //
+    // Collection: horses
+    // Fields:
+    //   - horseId: string (required)
+    //   - name: string (required, size < 50)
+    //   - stableNumber: string (size < 10)
+    //   - status: string (size < 50)
+    //   - description: string (size < 2000)
+    //   - imageUrl: string (optional, URL)
+    //
+    // Collection: lessons
+    // Fields:
+    //   - lessonId: string
+    //   - instructorId: string
+    //   - instructorName: string
+    //   - horseId: string
+    //   - horseName: string
+    //   - studentId: string
+    //   - studentName: string
+    //   - startTime: timestamp
+    //   - endTime: timestamp
+    //   - type: string (indywidualna, grupowa, etc.)
+    //   - status: string (scheduled, completed, cancelled)
+    //
+    // Collection: news
+    // Fields:
+    //   - newsId: string
+    //   - title: string (size < 200)
+    //   - content: string (size < 10000)
+    //   - authorId: string
+    //   - category: string
+    //   - createdAt: string
+    //   - imageUrl: string
+    //
+    // Collection: posts (Forum)
+    // Fields:
+    //   - postId: string
+    //   - authorId: string
+    //   - authorName: string
+    //   - content: string (size < 5000)
+    //   - createdAt: timestamp
+    //
+    // Collection: notifications
+    // Fields:
+    //   - notificationId: string
+    //   - userId: string
+    //   - title: string
+    //   - message: string
+    //   - type: string
+    //   - isRead: bool
+    //   - createdAt: string
+    //
+    // Collection: settings/app
+    // Fields: logoUrl, clubName, mainPhone, website, messengerLink, whatsappLink
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "magorzata.kielek@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isInstructor() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor';
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function validString(str, min, max) {
+      return str is string && str.size() >= min && str.size() <= max;
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.userId is string &&
+             data.email is string && isValidEmail(data.email) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.role in ['student', 'instructor', 'admin'] &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() < 20)) &&
+             (!('messengerLink' in data) || (data.messengerLink is string && data.messengerLink.size() < 200)) &&
+             (!('badgeInfo' in data) || (data.badgeInfo is string && data.badgeInfo.size() < 1000));
+    }
+
+    function isValidHorse(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 50 &&
+             (!('description' in data) || data.description.size() < 2000) &&
+             (!('stableNumber' in data) || data.stableNumber.size() < 10);
+    }
+
+    function isValidLesson(data) {
+      return data.startTime is timestamp && data.endTime is timestamp &&
+             data.status in ['pending', 'scheduled', 'completed', 'cancelled'];
+    }
+
+    function isValidNews(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.content is string && data.content.size() < 10000;
+    }
+
+    function isValidPost(data) {
+      return data.content is string && data.content.size() > 0 && data.content.size() < 5000;
+    }
+
+    // --- Rules ---
+
+    match /users/{userId} {
+      // PII Protection: Users can only read their own profile, except admins
+      // Wait, list view in admin panel needs to see others.
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      // Students can't escalate themselves to admin
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'student' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) &&
+                      (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /horses/{horseId} {
+      allow read: if isAuthenticated();
+      allow create, update: if (isAdmin() || isInstructor()) && isValidHorse(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /lessons/{lessonId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidLesson(request.resource.data);
+      allow update: if isAuthenticated() && isValidLesson(request.resource.data) && (
+        isAdmin() || 
+        isInstructor() || 
+        resource.data.studentId == request.auth.uid
+      );
+      allow delete: if isAdmin() || isInstructor();
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow create, update: if (isAdmin() || isInstructor()) && isValidNews(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update, delete: if isAuthenticated() && isValidPost(request.resource.data) && 
+                            (isAdmin() || resource.data.authorId == request.auth.uid);
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create, update: if isAdmin() || isInstructor(); 
+      allow delete: if isAdmin();
+    }
+
+    match /instructors/{instructorId} {
+      allow read: if true;
+      allow write: if isAdmin() || isInstructor();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

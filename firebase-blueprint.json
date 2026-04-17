@@ -1,0 +1,131 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile for students, instructors and admins",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "instructor", "admin"] },
+        "phoneNumber": { "type": "string" },
+        "messengerLink": { "type": "string" },
+        "badgeInfo": { "type": "string", "description": "Information about PZJ badges" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "role"]
+    },
+    "horse": {
+      "title": "Horse",
+      "description": "Horses in the stable",
+      "type": "object",
+      "properties": {
+        "horseId": { "type": "string" },
+        "name": { "type": "string" },
+        "stableNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["horseId", "name"]
+    },
+    "lesson": {
+      "title": "Lesson",
+      "description": "Riding lessons and events",
+      "type": "object",
+      "properties": {
+        "lessonId": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "horseId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "type": { "type": "string" },
+        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"] }
+      },
+      "required": ["lessonId", "startTime", "endTime"]
+    },
+    "news": {
+      "title": "News",
+      "description": "Announcements and updates",
+      "type": "object",
+      "properties": {
+        "newsId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["newsId", "title", "content"]
+    },
+    "post": {
+      "title": "Post",
+      "description": "Forum posts",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "content"]
+    },
+    "notification": {
+      "title": "Notification",
+      "description": "User notifications",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["notificationId", "userId", "message"]
+    },
+    "appSettings": {
+      "title": "AppSettings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string" },
+        "clubName": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "User profiles"
+    },
+    "horses/{horseId}": {
+      "schema": "horse",
+      "description": "Stable management"
+    },
+    "lessons/{lessonId}": {
+      "schema": "lesson",
+      "description": "Class schedule and booking"
+    },
+    "news/{newsId}": {
+      "schema": "news",
+      "description": "Club news"
+    },
+    "posts/{postId}": {
+      "schema": "post",
+      "description": "User forum"
+    },
+    "notifications/{notificationId}": {
+      "schema": "notification",
+      "description": "User alerts"
+    },
+    "settings/app": {
+      "schema": "appSettings",
+      "description": "Global application configuration"
+    }
+  }
+}

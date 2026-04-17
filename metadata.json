@@ -1,0 +1,6 @@
+{
+  "name": "KJW",
+  "description": "System zarządzania klubem jeździeckim KJW. Rezerwacje, grafik, konie, instruktorzy i forum dla klubowiczów.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

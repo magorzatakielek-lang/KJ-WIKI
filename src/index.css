@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@200;300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  
+  --color-primary: #1B4332;
+  --color-primary-light: #2D6A4F;
+  --color-accent: #D4AF37;
+  --color-accent-light: #E5C158;
+  --color-bg: #FDFDFB;
+  --color-surface: #FFFFFF;
+  --color-text-main: #1A1C1A;
+  --color-text-muted: #6B7280;
+  --color-border: #E5E7EB;
+  
+  --shadow-premium: 0 4px 20px -2px rgba(27, 67, 50, 0.08), 0 2px 8px -2px rgba(27, 67, 50, 0.04);
+}
+
+@layer base {
+  body {
+    @apply bg-bg text-text-main font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-serif text-primary tracking-tight;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface/80 backdrop-blur-md border border-white/20 shadow-premium;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-[#E5E7EB] rounded-full hover:bg-gray-400 transition-colors;
+  }
+
+  /* Specific lighter version for dark backgrounds like the menu */
+  .custom-scrollbar-light::-webkit-scrollbar {
+    width: 8px;
+  }
+  .custom-scrollbar-light::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar-light::-webkit-scrollbar-thumb {
+    @apply bg-white/30 rounded-full hover:bg-white/50 transition-colors;
+  }
+}
