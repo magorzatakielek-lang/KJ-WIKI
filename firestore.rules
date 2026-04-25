@@ -83,19 +83,26 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && (
-        (request.auth.token.email == "magorzata.kielek@gmail.com" && request.auth.token.email_verified == true) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        (request.auth.token.get('email', '').lower() == "magorzata.kielek@gmail.com") ||
+        (request.auth.token.get('email', '').lower() == "malgorzata.kielek@gmail.com") ||
+        (request.auth.token.get('email', '').lower() == "malgosia.kielek@gmail.com") ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
     }
 
     function isInstructor() {
-      return isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor';
+      return isAuthenticated() && (
+        isAdmin() ||
+        exists(/databases/$(database)/documents/instructors/$(request.auth.uid)) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor')
+      );
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    function isValidEmailOrEmpty(email) {
+      return email == '' || (email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"));
     }
 
     function validString(str, min, max) {
@@ -105,12 +112,12 @@ service cloud.firestore {
     // Domain Validators
     function isValidUser(data) {
       return data.userId is string &&
-             data.email is string && isValidEmail(data.email) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.role in ['student', 'instructor', 'admin'] &&
-             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() < 20)) &&
-             (!('messengerLink' in data) || (data.messengerLink is string && data.messengerLink.size() < 200)) &&
-             (!('badgeInfo' in data) || (data.badgeInfo is string && data.badgeInfo.size() < 1000));
+             isValidEmailOrEmpty(data.get('email', '')) &&
+             (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() < 100)) &&
+             (!('messengerLink' in data) || (data.messengerLink is string && data.messengerLink.size() < 1000)) &&
+             (!('badgeInfo' in data) || (data.badgeInfo is string && data.badgeInfo.size() < 5000));
     }
 
     function isValidHorse(data) {
@@ -136,14 +143,18 @@ service cloud.firestore {
     // --- Rules ---
 
     match /users/{userId} {
-      // PII Protection: Users can only read their own profile, except admins
-      // Wait, list view in admin panel needs to see others.
-      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
-      // Students can't escalate themselves to admin
+      allow read: if isAuthenticated() && (isOwner(userId) || isInstructor());
+      allow list: if isAuthenticated() && isInstructor();
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
                       (request.resource.data.role == 'student' || isAdmin());
-      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) &&
+      allow update: if (isOwner(userId) || isInstructor()) && isValidUser(request.resource.data) &&
                       (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow create, update, delete: if isInstructor();
     }
 
     match /horses/{horseId} {
@@ -158,7 +169,12 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isValidLesson(request.resource.data) && (
         isAdmin() || 
         isInstructor() || 
-        resource.data.studentId == request.auth.uid
+        resource.data.studentId == request.auth.uid ||
+        // Allow adding oneself to participants array
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants']) && 
+         request.resource.data.participants.size() > resource.data.participants.size()) ||
+        // Allow cancelling oneself
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants', 'status']))
       );
       allow delete: if isAdmin() || isInstructor();
     }
@@ -169,7 +185,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /posts/{postId} {
+    match /forum/{postId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidPost(request.resource.data);
       allow update, delete: if isAuthenticated() && isValidPost(request.resource.data) && 
@@ -177,14 +193,22 @@ service cloud.firestore {
     }
 
     match /notifications/{notificationId} {
-      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create, update: if isAdmin() || isInstructor(); 
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || 
+                                           (isAdmin() && resource.data.userId == 'admin') ||
+                                           (isInstructor() && resource.data.userId == 'admin'));
+      allow create: if isAuthenticated(); 
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin() || isInstructor());
       allow delete: if isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /instructors/{instructorId} {
       allow read: if true;
-      allow write: if isAdmin() || isInstructor();
+      allow create, update, delete: if isAdmin() || isInstructor();
     }
 
     match /settings/{docId} {

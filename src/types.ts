@@ -6,8 +6,11 @@ export interface UserProfile {
   name: string;
   role: UserRole;
   phoneNumber?: string;
+  shareDataConsent: boolean;
   messengerLink?: string;
   badgeInfo?: string;
+  imageUrl?: string;
+  memberId?: string;
   createdAt: string;
 }
 
@@ -24,10 +27,12 @@ export interface Lesson {
   lessonId: string;
   instructorId: string;
   instructorName?: string;
-  horseId: string;
+  horseId?: string;
   horseName?: string;
-  studentId?: string;
-  studentName?: string;
+  studentId?: string; // Legacy: for single participant lessons
+  studentName?: string; // Legacy
+  participants?: { userId: string, name: string, status: 'pending' | 'confirmed' | 'cancelled', shareDataConsent?: boolean }[];
+  maxParticipants?: number;
   startTime: any; // Firestore Timestamp
   endTime: any; // Firestore Timestamp
   duration: number; // in minutes
@@ -53,6 +58,16 @@ export interface ForumPost {
   createdAt: any;
 }
 
+export interface TimeSlot {
+  start: string; // "HH:mm"
+  end: string;   // "HH:mm"
+}
+
+export interface WorkingDay {
+  active: boolean;
+  slots: TimeSlot[];
+}
+
 export interface Instructor {
   instructorId: string;
   userId?: string; // Linked User ID
@@ -65,6 +80,9 @@ export interface Instructor {
   whatsapp?: string;
   messenger?: string;
   email?: string;
+  workingHours?: {
+    [key: string]: WorkingDay; // key is "0" to "6" (Sunday to Saturday)
+  };
 }
 
 export interface ClubFile {
@@ -101,6 +119,10 @@ export interface AppSettings {
   website?: string;
   messengerLink?: string;
   whatsappLink?: string;
+  clubEmail?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  address?: string;
 }
 
 export interface GalleryItem {

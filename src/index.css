@@ -1,57 +1,88 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-primary: #1B4332;
-  --color-primary-light: #2D6A4F;
-  --color-accent: #D4AF37;
-  --color-accent-light: #E5C158;
-  --color-bg: #FDFDFB;
+  --color-primary: #1E293B; /* Slate 800 */
+  --color-primary-dark: #0F172A; /* Slate 900 */
+  --color-accent: #D4AF37; /* Polished Gold */
+  --color-accent-light: #F1E5AC;
+  --color-bg: #FDFDFD;
   --color-surface: #FFFFFF;
-  --color-text-main: #1A1C1A;
-  --color-text-muted: #6B7280;
-  --color-border: #E5E7EB;
+  --color-text-main: #1E293B;
+  --color-text-muted: #94A3B8;
+  --color-border: #F1F5F9;
   
-  --shadow-premium: 0 4px 20px -2px rgba(27, 67, 50, 0.08), 0 2px 8px -2px rgba(27, 67, 50, 0.04);
+  --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  --shadow-elevated: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+  --shadow-hardware: none;
 }
 
 @layer base {
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #root {
+    height: 100%;
+    width: 100%;
+  }
   body {
     @apply bg-bg text-text-main font-sans antialiased;
   }
   h1, h2, h3, h4 {
-    @apply font-serif text-primary tracking-tight;
+    @apply font-serif text-primary tracking-tight font-medium italic;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-surface/80 backdrop-blur-md border border-white/20 shadow-premium;
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-premium;
+  }
+  .hardware-grid {
+    @apply bg-surface rounded-[2rem] border border-border shadow-premium transition-all duration-500 hover:shadow-elevated hover:border-accent/10;
+  }
+  .micro-label {
+    @apply text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-text-muted;
   }
 }
 
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0,0,0,0.03);
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-[#E5E7EB] rounded-full hover:bg-gray-400 transition-colors;
+    @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors border-2 border-transparent bg-clip-padding;
+  }
+  .custom-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: #cbd5e1 transparent;
   }
 
-  /* Specific lighter version for dark backgrounds like the menu */
   .custom-scrollbar-light::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
   }
   .custom-scrollbar-light::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
   }
   .custom-scrollbar-light::-webkit-scrollbar-thumb {
-    @apply bg-white/30 rounded-full hover:bg-white/50 transition-colors;
+    @apply bg-white/50 rounded-full hover:bg-white/70 transition-colors border-2 border-transparent bg-clip-padding;
+  }
+  .custom-scrollbar-light {
+    scrollbar-width: auto;
+    scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
   }
 }
+

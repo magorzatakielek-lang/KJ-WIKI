@@ -43,9 +43,24 @@
         "startTime": { "type": "string", "format": "date-time" },
         "endTime": { "type": "string", "format": "date-time" },
         "type": { "type": "string" },
-        "status": { "type": "string", "enum": ["scheduled", "completed", "cancelled"] }
+        "status": { "type": "string", "enum": ["pending", "scheduled", "completed", "cancelled"] },
+        "participants": { "type": "array" },
+        "maxParticipants": { "type": "number" }
       },
       "required": ["lessonId", "startTime", "endTime"]
+    },
+    "galleryItem": {
+      "title": "GalleryItem",
+      "description": "Photos from the club life",
+      "type": "object",
+      "properties": {
+        "photoId": { "type": "string" },
+        "url": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["photoId", "url"]
     },
     "news": {
       "title": "News",
@@ -114,6 +129,10 @@
     "news/{newsId}": {
       "schema": "news",
       "description": "Club news"
+    },
+    "gallery/{photoId}": {
+      "schema": "galleryItem",
+      "description": "Photo archive"
     },
     "posts/{postId}": {
       "schema": "post",
