@@ -404,7 +404,17 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        setLoadingTimeout(true);
+      }
+    }, 8000); // 8 seconds timeout
+    return () => clearTimeout(timer);
+  }, [loading]);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -882,12 +892,27 @@ export default function App() {
       <div className="min-h-[100dvh] flex items-center justify-center bg-bg relative">
         <div className="flex flex-col items-center gap-6">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted animate-pulse">Ładowanie systemu...</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted animate-pulse">
+            {loadingTimeout ? 'System uruchamia się nietypowo długo...' : 'Ładowanie systemu...'}
+          </p>
+          
+          {loadingTimeout && (
+            <div className="flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-4">Może występować problem z połączeniem</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-primary text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg hover:bg-accent hover:text-primary transition-all"
+              >
+                Odśwież stronę
+              </button>
+            </div>
+          )}
+
           <button 
-            onClick={() => signOut(auth)}
+            onClick={() => signOut(auth).then(() => window.location.reload())}
             className="mt-8 text-[10px] font-bold uppercase tracking-widest text-accent hover:underline decoration-2 underline-offset-4"
           >
-            Wyloguj (jeśli utkniesz)
+            Wyloguj i zresetuj (jeśli utkniesz)
           </button>
         </div>
       </div>
