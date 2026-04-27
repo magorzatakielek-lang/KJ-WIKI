@@ -1,0 +1,23 @@
+steps:
+  # Budowanie obrazu aplikacji
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/app-image', '.']
+
+  # Budowanie obrazu Nginx (musisz mieć plik Dockerfile.nginx w repozytorium!)
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-f', 'Dockerfile.nginx', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/nginx-image', '.']
+
+  # Wypchnięcie obrazów
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki']
+
+  # Aktualizacja Cloud Run z dwoma różnymi obrazami
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'services', 'update', 'klub-je-dziecki-wiki',
+        '--region', 'europe-west2',
+        '--container', 'app-container', '--image', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/app-image',
+        '--container', 'nginx-container', '--image', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/nginx-image'
+      ]
