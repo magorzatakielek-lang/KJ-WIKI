@@ -1,27 +1,30 @@
 steps:
-  # Budowanie obrazu aplikacji
+  # 1. Budowanie aplikacji głównej
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/app-image', '.']
+    args: ['build', '-t', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/app-image:$COMMIT_SHA', '.']
 
-  # Budowanie obrazu Nginx (musisz mieć plik Dockerfile.nginx w repozytorium!)
+  # 2. Budowanie Nginxa (używa obrazu nginx jako bazy)
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-f', 'Dockerfile.nginx', '-t', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/nginx-image', '.']
+    args: ['build', '-t', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/nginx-image:$COMMIT_SHA', '-f', 'Dockerfile.nginx', '.']
+    # UWAGA: Musisz mieć plik Dockerfile.nginx w swoim GitHubie!
 
-  # Wypchnięcie obrazów
+  # 3. Wysłanie obrazów do rejestru
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', '--all-tags', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki']
+    args: ['push', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/app-image:$COMMIT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/nginx-image:$COMMIT_SHA']
 
-  # Aktualizacja Cloud Run z dwoma różnymi obrazami
+  # 4. Aktualizacja Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       [
-        'run', 'services', 'update', 'klub-je-dziecki-wiki',
-        '--region', 'europe-west2',
-        '--container', 'app-container', '--image', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/app-image',
-        '--container', 'nginx-container', '--image', 'europe-west2-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/kj-wiki/nginx-image'
+        'run', 'services', 'update', '$_SERVICE_NAME',
+        '--region', '$_DEPLOY_REGION',
+        '--container', 'app-container', '--image', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/app-image:$COMMIT_SHA',
+        '--container', 'nginx-container', '--image', '$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/nginx-image:$COMMIT_SHA'
       ]
+
 options:
   logging: CLOUD_LOGGING_ONLY
-steps:
-  # ... Twoje kroki budowania ...
+
