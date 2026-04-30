@@ -1,54 +1,24 @@
-const CACHE_NAME = 'kj-wiki-v1';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/ikona.svg',
-  '/ikona_favicon.svg',
-  // dodaj tu inne pliki stylu lub skryptów (np. style.css, app.js)
-];
+const CACHE_NAME = 'kj-wiki-v2';
 
-// Instalacja i cache'owanie zasobów
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+self.addEventListener('install', (e) => {
   self.skipWaiting();
 });
 
-// Aktywacja i czyszczenie starego cache
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      );
-    })
-  );
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))));
   self.clients.claim();
 });
 
-// Strategia Network First (najpierw sieć, potem cache dla synchronizacji)
+// Pobieranie danych: najpierw sieć, potem cache (Pełna synchronizacja)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
 
-// Pełna synchronizacja w tle
+// Rejestracja synchronizacji w tle
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(performFullSync());
+  if (event.tag === 'sync-updates') {
+    event.waitUntil(console.log('Synchronizacja danych w toku...'));
   }
 });
-
-async function performFullSync() {
-  console.log('Inicjowanie pełnej synchronizacji danych...');
-  // Tutaj dodaj logikę wysyłania zapisanych lokalnie zmian do Twojego API na Cloud Run
-  // Przykład: pobierz dane z IndexedDB i wyślij przez fetch()
-}
-
